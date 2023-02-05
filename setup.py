@@ -20,7 +20,10 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'rotate_robot = ZhiyuanZhang_object_follower.rotate_robot:main'
+            'rotate_robot = ZhiyuanZhang_object_follower.rotate_robot:main',
+            'find_object = ZhiyuanZhang_object_follower.find_object:main',
+            'send_test_img = ZhiyuanZhang_object_follower.send_test_img:main',
+            'view_debug_img = ZhiyuanZhang_object_follower.view_debug_img:main'
         ],
     },
 )
