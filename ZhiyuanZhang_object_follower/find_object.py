@@ -2,8 +2,10 @@
 #               the topic /camera/image/compressed. Example code in Python:
 
 import cv2
+import numpy as np
 import rclpy
 from rclpy.node import Node
+from cv_bridge import CvBridge
 
 from geometry_msgs.msg import Point
 from sensor_msgs.msg import CompressedImage
@@ -14,16 +16,16 @@ class FindObject(Node):
 
         super().__init__('find_object')
         self.get_logger().info(f' publish_debug: {self.publish_debug}')
+        self.br = CvBridge()
 
         self.publisher = self.create_publisher(Point, '/object_location', 5)
         self.subscription = self.create_subscription(CompressedImage,'/camera/image/compressed',self.newImageCallback,5)
         if (self.publish_debug):
-            self.debug_image_publisher = self.create_subscription(CompressedImage, '/debug_img',5)
+            self.debug_image_publisher = self.create_publisher(CompressedImage, '/debug_img',5)
 
     # /object_location: only x matters, left positive,right negative
     def newImageCallback(self,msg):
         x,y = self.processImage(msg)
-
         #self.get_logger().info(f'received: {msg}')
         out_msg = Point()
         out_msg.x = x # object location, x,y, x is horizontal location
@@ -32,7 +34,7 @@ class FindObject(Node):
         self.get_logger().info(f'Object detected at {out_msg.x,out_msg.y}')
 
     def processImage(self,msg):
-        frame = msg.data
+        frame = self.br.compressed_imgmsg_to_cv2(msg)
         blurred = cv2.GaussianBlur(frame, (11,11),0)
         hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
         saturation = hsv[:,:,1]
@@ -51,15 +53,19 @@ class FindObject(Node):
 
         ((x,y), radius) = cv2.minEnclosingCircle(best_contour)
 
-        if (publish_debug):
+        if (self.publish_debug):
             M = cv2.moments(best_contour)
             center = (int(M['m10']/M['m00']),int(M['m01']/M['m00']))
-            print(center)
             cv2.circle(frame, (int(x),int(y)), int(radius), (0,0,255), 3)
             cv2.circle(frame, center, 5, (0,0,255),-1)
+            msg = self.br.cv2_to_compressed_imgmsg(frame)
             self.debug_image_publisher.publish(msg)
+            self.get_logger().info(f' published debug image ')
+
+        x_dimless = x/frame.shape[0]-0.5
+        y_dimless = y/frame.shape[1]-0.5
             
-        return (x,y)
+        return (x_dimless,y_dimless)
 
 
 def main(args=None):

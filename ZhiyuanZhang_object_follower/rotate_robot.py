@@ -18,7 +18,7 @@ class RotateRobot(Node):
     def objectLocationCallback(self,msg):
         self.get_logger().info(f'received: {msg}')
         out_msg = Twist()
-        out_msg.angular.z = msg.x * 2
+        out_msg.angular.z = msg.x
         self.publisher.publish(out_msg)
         self.get_logger().info(f'Publishing angular.z={out_msg.angular.z}')
 

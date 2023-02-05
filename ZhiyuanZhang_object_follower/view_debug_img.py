@@ -14,7 +14,8 @@ class ViewDebugImg(Node):
         #self.get_logger().info(f' publish_debug: {self.publish_debug}')
         self.br = CvBridge()
 
-        self.subscription = self.create_subscription(CompressedImage,'/camera/image/compressed',self.newImageCallback,5)
+        #self.subscription = self.create_subscription(CompressedImage,'/camera/image/compressed',self.newImageCallback,5)
+        self.subscription = self.create_subscription(CompressedImage,'/debug_img',self.newImageCallback,5)
 
     def newImageCallback(self,msg):
         frame = self.br.compressed_imgmsg_to_cv2(msg)

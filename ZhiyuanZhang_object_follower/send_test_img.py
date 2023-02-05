@@ -12,7 +12,7 @@ class PubTestImage(Node):
         super().__init__('publish_test_image')
         #self.get_logger().info(f' publish_debug: {self.publish_debug}')
         self.publisher = self.create_publisher(CompressedImage,'/camera/image/compressed',5)
-        self.timer = self.create_timer(0.1,self.publishImage)
+        self.timer = self.create_timer(0.5,self.publishImage)
         self.br = CvBridge()
         self.frame_count = 0
 
@@ -22,9 +22,8 @@ class PubTestImage(Node):
     def publishImage(self):
         success, frame = self.vid.read()
         if (not success):
-            #self.get_logger().info(f'All images sent')
-            self.get_logger().info(f'Cant read images')
-            exit()
+            self.get_logger().info(f'All images sent')
+            self.vid = cv2.VideoCapture('../../../../hw1/Video.MOV')
             return
         self.frame_count += 1
 
