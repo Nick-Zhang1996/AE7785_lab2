@@ -6,13 +6,13 @@ def generate_launch_description():
         Node(
             package='ZhiyuanZhang_object_follower',
             namespace='nick',
-            executable='find_object.py',
+            executable='find_object',
             name='find_object'
         ),
         Node(
             package='ZhiyuanZhang_object_follower',
             namespace='nick1',
-            executable='rotate_robot.py',
+            executable='rotate_robot',
             name='rotate_robot'
-        ),
+        )
     ])
