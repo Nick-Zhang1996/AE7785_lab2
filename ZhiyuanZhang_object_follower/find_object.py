@@ -19,7 +19,16 @@ class FindObject(Node):
         self.br = CvBridge()
 
         self.publisher = self.create_publisher(Point, '/object_location', 5)
-        self.subscription = self.create_subscription(CompressedImage,'/camera/image/compressed',self.newImageCallback,5)
+        #Set up QoS Profiles for passing images over WiFi
+        image_qos_profile = QoSProfile(
+            reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT,
+            history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST,
+            durability=QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_VOLATILE,
+            depth=1
+        )
+
+        #Declare that the minimal_video_subscriber node is subcribing to the /camera/image/compressed topic.
+        self.subscription = self.create_subscription(CompressedImage,'/camera/image/compressed',self.newImageCallback,image_qos_profile)
         if (self.publish_debug):
             self.debug_image_publisher = self.create_publisher(CompressedImage, '/debug_img',5)
 
