@@ -46,52 +46,46 @@ class DetectObject(Node):
 
     def processImage(self,msg):
         ori_frame = self.br.compressed_imgmsg_to_cv2(msg)
-        '''
-        blurred = cv2.GaussianBlur(frame, (11,11),0)
-        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+        # one way
+        frame = ori_frame.copy().astype(float)
+        blue = frame[:,:,0] - (frame[:,:,1]/2 + frame[:,:,2]/2)
+        # another way
+        hsv = cv2.cvtColor(ori_frame, cv2.COLOR_BGR2HSV)
+        # kinda
+        hue = hsv[:,:,0]
+        # good
         saturation = hsv[:,:,1]
-        lower = 200
+        value = hsv[:,:,2]
+
+        saturation = self.normalize(saturation)
+        blue = self.normalize(blue)
+        blue[blue<0.1] = 0
+        saturation[saturation<0.1] = 0
+
+        frame = self.toImage(blue*saturation)
+
+        lower = 130
         higher = 255
-        mask = cv2.inRange(saturation, lower, higher)
+        mask = cv2.inRange(frame, lower, higher)
         mask = cv2.erode(mask, None, iterations=2)
         mask = cv2.dilate(mask, None, iterations=2)
         contours, hierarchy = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         area_vec = [cv2.contourArea(contour) for contour in contours]
         # DEBUG
-        #cv2.drawContours(frame, contours, -1, (0,255,0), 3)
+        frame = np.dstack([frame,frame,frame])
+        cv2.drawContours(frame, contours, -1, (0,255,0), 3)
 
         index = np.argmax(area_vec)
         best_contour = contours[index]
 
         ((x,y), radius) = cv2.minEnclosingCircle(best_contour)
-        '''
-        x = y = 0
 
         if (self.publish_debug):
-            '''
             M = cv2.moments(best_contour)
             center = (int(M['m10']/M['m00']),int(M['m01']/M['m00']))
             cv2.circle(frame, (int(x),int(y)), int(radius), (0,0,255), 3)
             cv2.circle(frame, center, 5, (0,0,255),-1)
-            '''
-            # one way
-            frame = ori_frame.copy().astype(float)
-            blue = frame[:,:,0] - (frame[:,:,1]/2 + frame[:,:,2]/2)
 
-            # another way
-            hsv = cv2.cvtColor(ori_frame, cv2.COLOR_BGR2HSV)
-            # kinda
-            hue = hsv[:,:,0]
-            # good
-            saturation = hsv[:,:,1]
-            value = hsv[:,:,2]
-
-            saturation = self.normalize(saturation)
-            blue = self.normalize(blue)
-            blue[blue<0.1] = 0
-            saturation[saturation<0.1] = 0
-
-            frame = self.toImage(blue*saturation)
             msg = self.br.cv2_to_compressed_imgmsg(frame)
             self.debug_image_publisher.publish(msg)
             self.get_logger().info(f' published debug image ')
@@ -103,7 +97,11 @@ class DetectObject(Node):
     def normalize(self,val):
         return (val - np.mean(val)) / (np.max(val) - np.min(val))
     def toImage(self,val):
-        return ((self.normalize(val) + 0.5 )*255).astype(int)
+        val = ((self.normalize(val) + 0.5 )*255).astype(int)
+        val[val<0] = 0
+        val[val>255] = 255
+        val = val.astype('uint8')
+        return val
         
         
 
