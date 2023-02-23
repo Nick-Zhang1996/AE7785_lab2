@@ -1,6 +1,6 @@
-# find_object: This node should subscribe to receive images from the Raspberry Pi Camera on
+# detect_object: This node should subscribe to receive images from the Raspberry Pi Camera on
 #               the topic /camera/image/compressed. Example code in Python:
-# output: 
+# output: /debug_img, /object_location
 
 import cv2
 import numpy as np
@@ -39,7 +39,7 @@ class DetectObject(Node):
         x,y = self.processImage(msg)
         #self.get_logger().info(f'received: {msg}')
         out_msg = Point()
-        out_msg.x = x # object location, x,y, x is horizontal location
+        out_msg.x = x # object location, x,y, x is horizontal location, in deg, left positive
         out_msg.y = y 
         self.publisher.publish(out_msg)
         self.get_logger().info(f'Object detected at {out_msg.x,out_msg.y}')
@@ -88,10 +88,14 @@ class DetectObject(Node):
 
             msg = self.br.cv2_to_compressed_imgmsg(frame)
             self.debug_image_publisher.publish(msg)
-            self.get_logger().info(f' published debug image ')
+            #self.get_logger().info(f' published debug image ')
 
-        x_dimless = x/frame.shape[0]-0.5
-        y_dimless = y/frame.shape[1]-0.5
+        # frame: 240(height):320(width)
+        # 320 -> 31.1 deg right
+        # 0 -> -31.3 deg left
+
+        x_dimless = -(x/frame.shape[1]-0.5)*2*31.1
+        y_dimless = y/frame.shape[0]-0.5
             
         return (x_dimless,y_dimless)
     def normalize(self,val):
@@ -111,7 +115,7 @@ def main(args=None):
     detect_object = DetectObject(publish_debug=True)
     rclpy.spin(detect_object)
 
-    find_object.destroy_node()
+    detect_object.destroy_node()
     rclpy.shutdown()
 
 
