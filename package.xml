@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>ZhiyuanZhang_object_follower</name>
+  <name>ZhiyuanZhang_chase_object</name>
   <version>0.0.0</version>
-  <description>AE7785 Lab2</description>
+  <description>AE7785 Lab3</description>
   <maintainer email="nickzhang@gatech.edu">nick</maintainer>
   <license>MIT</license>
 

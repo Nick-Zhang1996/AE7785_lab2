@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'ZhiyuanZhang_object_follower'
+package_name = 'ZhiyuanZhang_chase_object'
 
 setup(
     name=package_name,
@@ -20,10 +20,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'rotate_robot = ZhiyuanZhang_object_follower.rotate_robot:main',
-            'find_object = ZhiyuanZhang_object_follower.find_object:main',
-            'send_test_img = ZhiyuanZhang_object_follower.send_test_img:main',
-            'view_debug_img = ZhiyuanZhang_object_follower.view_debug_img:main'
+            'detect_object = ZhiyuanZhang_chase_object.detect_object:main',
+            'get_object_range = ZhiyuanZhang_chase_object.get_object_range:main',
+            'chase_object = ZhiyuanZhang_chase_object.chase_object:main',
         ],
     },
 )

@@ -1,5 +1,6 @@
 # find_object: This node should subscribe to receive images from the Raspberry Pi Camera on
 #               the topic /camera/image/compressed. Example code in Python:
+# output: 
 
 import cv2
 import numpy as np
@@ -9,12 +10,13 @@ from cv_bridge import CvBridge
 
 from geometry_msgs.msg import Point
 from sensor_msgs.msg import CompressedImage
+from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSReliabilityPolicy, QoSHistoryPolicy
 
-class FindObject(Node):
+class DetectObject(Node):
     def __init__(self, publish_debug=False):
         self.publish_debug = publish_debug
 
-        super().__init__('find_object')
+        super().__init__('detect_object')
         self.get_logger().info(f' publish_debug: {self.publish_debug}')
         self.br = CvBridge()
 
@@ -43,7 +45,8 @@ class FindObject(Node):
         self.get_logger().info(f'Object detected at {out_msg.x,out_msg.y}')
 
     def processImage(self,msg):
-        frame = self.br.compressed_imgmsg_to_cv2(msg)
+        ori_frame = self.br.compressed_imgmsg_to_cv2(msg)
+        '''
         blurred = cv2.GaussianBlur(frame, (11,11),0)
         hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
         saturation = hsv[:,:,1]
@@ -61,12 +64,34 @@ class FindObject(Node):
         best_contour = contours[index]
 
         ((x,y), radius) = cv2.minEnclosingCircle(best_contour)
+        '''
+        x = y = 0
 
         if (self.publish_debug):
+            '''
             M = cv2.moments(best_contour)
             center = (int(M['m10']/M['m00']),int(M['m01']/M['m00']))
             cv2.circle(frame, (int(x),int(y)), int(radius), (0,0,255), 3)
             cv2.circle(frame, center, 5, (0,0,255),-1)
+            '''
+            # one way
+            frame = ori_frame.copy().astype(float)
+            blue = frame[:,:,0] - (frame[:,:,1]/2 + frame[:,:,2]/2)
+
+            # another way
+            hsv = cv2.cvtColor(ori_frame, cv2.COLOR_BGR2HSV)
+            # kinda
+            hue = hsv[:,:,0]
+            # good
+            saturation = hsv[:,:,1]
+            value = hsv[:,:,2]
+
+            saturation = self.normalize(saturation)
+            blue = self.normalize(blue)
+            blue[blue<0.1] = 0
+            saturation[saturation<0.1] = 0
+
+            frame = self.toImage(blue*saturation)
             msg = self.br.cv2_to_compressed_imgmsg(frame)
             self.debug_image_publisher.publish(msg)
             self.get_logger().info(f' published debug image ')
@@ -75,12 +100,18 @@ class FindObject(Node):
         y_dimless = y/frame.shape[1]-0.5
             
         return (x_dimless,y_dimless)
+    def normalize(self,val):
+        return (val - np.mean(val)) / (np.max(val) - np.min(val))
+    def toImage(self,val):
+        return ((self.normalize(val) + 0.5 )*255).astype(int)
+        
+        
 
 
 def main(args=None):
     rclpy.init(args=args)
-    find_object = FindObject(publish_debug=True)
-    rclpy.spin(find_object)
+    detect_object = DetectObject(publish_debug=True)
+    rclpy.spin(detect_object)
 
     find_object.destroy_node()
     rclpy.shutdown()

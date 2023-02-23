@@ -8,7 +8,7 @@ from rclpy.node import Node
 
 from geometry_msgs.msg import Point,Twist
 
-class RotateRobot(Node):
+class ChaseObject(Node):
     def __init__(self):
         super().__init__('rotate_robot')
         self.publisher = self.create_publisher(Twist, '/cmd_vel', 5)
@@ -25,7 +25,7 @@ class RotateRobot(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    rotate_robot = RotateRobot()
+    rotate_robot = ChaseObject()
     rclpy.spin(rotate_robot)
 
     rotate_robot.destroy_node()
