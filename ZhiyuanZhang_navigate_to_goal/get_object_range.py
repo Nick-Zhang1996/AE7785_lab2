@@ -1,4 +1,5 @@
-# subscribe to 
+# subscribe to /scan, get object pose
+# publish to 
 import cv2
 import numpy as np
 import rclpy
@@ -44,10 +45,12 @@ class GetObjectRange(Node):
         # index at angle
         index = int((self.object_location_angle_rad - msg.angle_min)/angle_inc)
         mean_range = np.mean( msg.ranges[index] )
+
         self.get_logger().info(f'index = {index} range: {mean_range}')
-        #self.publisher.publish(out_msg)
-
-
+        out_msg = Point()
+        out_msg.x = self.object_location_angle_rad
+        out_msg.y = mean_range
+        self.publisher.publish(out_msg)
 
 def main(args=None):
     rclpy.init(args=args)

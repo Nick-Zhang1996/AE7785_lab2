@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'ZhiyuanZhang_chase_object'
+package_name = 'ZhiyuanZhang_navigate_to_goal'
 
 setup(
     name=package_name,
@@ -20,9 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'detect_object = ZhiyuanZhang_chase_object.detect_object:main',
-            'get_object_range = ZhiyuanZhang_chase_object.get_object_range:main',
-            'chase_object = ZhiyuanZhang_chase_object.chase_object:main',
+            'get_object_range = ZhiyuanZhang_navigate_to_goal.getObjectRange:main',
+            'goto_goal = ZhiyuanZhang_navigate_to_goal.goto_goal:main',
         ],
     },
 )
