@@ -33,12 +33,14 @@ class GotoGoal(Node):
     def newScanCallback(self,msg):
         # report direct obstacle
         # after report, scan obstacle pose , report
-        self.get_logger().info(f'got scan message')
+        #self.get_logger().info(f'got scan message')
         if (not self.enable_scan.is_set()):
             return
 
     def newOdomCallback(self,msg):
-        self.get_logger().info(f'got odom message')
+        self.get_logger().info(f'{msg.pose}')
+
+        return
 
     def main(self):
         try:
@@ -53,16 +55,20 @@ class GotoGoal(Node):
 
 
     def sequence(self):
+        dt_linear = 0.9
+        dt_turn = 0.3
+        v_linear = 0.15
+        dt = 1
         # go to first node
         self.get_logger().info(f'starting')
-        sleep(3)
+        sleep(dt)
 
         #1.5 0
         self.get_logger().info(f'going to first node 1.5,0')
         msg = Twist()
-        msg.linear.x = 0.2
+        msg.linear.x = v_linear
         self.publisher.publish(msg)
-        sleep(1.5/0.2)
+        sleep(1.5/v_linear+dt_linear)
         msg.linear.x = 0.0
         self.publisher.publish(msg)
         self.get_logger().info(f'arrived at first node 1.5,0')
@@ -72,53 +78,71 @@ class GotoGoal(Node):
         self.get_logger().info(f'going to second node 1.5,1.4')
         # move to 1.5+0.45, 0
         self.get_logger().info(f'going to intermediate node 1.5+0.45,0')
-        msg.linear.x = 0.2
+        msg.linear.x = v_linear
         self.publisher.publish(msg)
-        sleep(0.45/0.2)
+
+        sleep(0.45/v_linear+dt_linear)
+
+        msg = Twist()
         msg.linear.x = 0.0
         self.publisher.publish(msg)
-        msg = Twist()
         self.get_logger().info(f'arrived at intermediate node 1.5+0.45,0')
-        sleep(3)
+        sleep(dt)
 
         self.get_logger().info(f'turning 90 deg ccw')
         msg = Twist()
         msg.angular.z = 0.3
-        sleep(radians(90)/0.3)
+        self.publisher.publish(msg)
+
+        sleep(radians(90)/0.3+dt_turn)
+
         msg = Twist()
         self.publisher.publish(msg)
-        sleep(3)
         self.get_logger().info(f'done turning')
+        sleep(dt)
 
         self.get_logger().info(f'going to intermediate node 1.5+0.45,1.4')
         msg = Twist()
-        msg.linear.x = 0.2
-        sleep(1.4/0.2)
+        msg.linear.x = v_linear
+        self.publisher.publish(msg)
+
+        sleep(1.4/v_linear)
         msg = Twist()
-        sleep(3)
+        self.publisher.publish(msg)
         self.get_logger().info(f'arrived at intermediate node 1.5+0.45,1.4')
+        sleep(dt)
 
         self.get_logger().info(f'turning 90 deg ccw')
         msg = Twist()
         msg.angular.z = 0.3
-        sleep(radians(90)/0.3)
+        self.publisher.publish(msg)
+
+        sleep(radians(90)/0.3+dt_turn)
+
         msg = Twist()
         self.publisher.publish(msg)
-        sleep(3)
         self.get_logger().info(f'done turning')
+        sleep(dt)
 
         self.get_logger().info(f'going to second node 1.5,1.4')
         msg = Twist()
         msg.linear.x = 0.2
         self.publisher.publish(msg)
-        sleep(0.45/0.2)
+
+        sleep(0.45/0.2+dt_linear)
+
+        msg = Twist()
         msg.linear.x = 0.0
         self.publisher.publish(msg)
-        sleep(3)
         self.get_logger().info(f'arrived at second node 1.5,1.4')
+        sleep(dt)
 
         #0 1.4
-        self.get_logger().info(f'going to first node 1.5,0')
+        self.get_logger().info(f'going to third node 0,1.4')
+        # wait for obstacle to appear
+        # wait while obstacle becomes stationary
+        # find obstacle bounding box 
+        # replan
 
 
 def main(args=None):
