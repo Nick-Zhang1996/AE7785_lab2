@@ -79,25 +79,28 @@ class GotoGoal(Node):
             #print(f'orientation: {degrees(orientation)}')
 
             # line: rho = x*cos(theta) + y*sin(theta)
-            ax = self.ax
-            self.show_scan(ax, angles, ranges, mask)
-            #self.show_hough_line(ax[1], accumulator, thetas, rhos)
+            if (False):
+                ax = self.ax
+                self.show_scan(ax, angles, ranges, mask)
+                #self.show_hough_line(ax[1], accumulator, thetas, rhos)
 
-            print(centroid)
-            circle = plt.Circle(centroid,0.03, color='b')
-            ax.add_patch(circle)
-            plt.pause(0.05)
+                print(centroid)
+                circle = plt.Circle(centroid,0.03, color='b')
+                ax.add_patch(circle)
+                plt.pause(0.05)
 
             # found an obstacle
             local_angle = np.arctan2(centroid[1],centroid[0])
             local_distance = np.sqrt(centroid[1]**2 + centroid[0]**2)
             global_x = self.globalPos.x + np.cos(self.globalAng + local_angle)*local_distance
             global_y = self.globalPos.y + np.sin(self.globalAng + local_angle)*local_distance
+            global_orientation = orientation + self.globalAng
 
             self.obstacle_location = (global_x,global_y)
+            self.obstacle_orientation = orientation
 
             self.located_obstacle.set()
-            self.get_logger().info(f'found obstacle at {self.obstacle_location}')
+            self.get_logger().info(f'found obstacle at {self.obstacle_location, degrees(orientation)}deg')
 
 
     def newOdomCallback(self, Odom):
@@ -149,7 +152,6 @@ class GotoGoal(Node):
         v_linear = 0.15
         dt = 1
         # go to first node
-        '''
         self.get_logger().info(f'starting')
         sleep(dt)
 
@@ -164,7 +166,7 @@ class GotoGoal(Node):
         self.get_logger().info(f'arrived at first node 1.5,0')
         self.get_logger().info(f'{self.globalPos}')
         self.get_logger().info(f'{self.globalAng}')
-        sleep(10)
+        sleep(3)
 
         #1.5 1.4
         self.get_logger().info(f'going to second node 1.5,1.4')
@@ -238,7 +240,6 @@ class GotoGoal(Node):
         self.get_logger().info(f'{self.globalPos}')
         self.get_logger().info(f'{self.globalAng}')
         sleep(dt)
-        '''
 
         #0 1.4
         self.get_logger().info(f'going to third node 0,1.4')
@@ -266,21 +267,85 @@ class GotoGoal(Node):
             exit(0)
 
         # found obstacle, wait 5 seconds for obstacle to settle
-        sleep(5)
+        sleep(3)
         # re-enable scan
         self.enable_scan.set()
         if (not self.located_obstacle.wait(2)):
             print(f'did not get a fix on obstacle')
-        # plan path
-        self.planPath()
+
+        # turn_left
+        remaining_x = self.globalPos.x - 0.2
+        # + -> obstacle is to the left
+        lateral = self.globalPos.y - self.obstacle_location[1]
+        print(f'current pos {self.globalPos}')
+        print(f'remaining distance: {remaining_x}')
+        print(f'lateral: {lateral}')
+
+        if (self.obstacle_orientation > 0):
+            # obstacle facing left, evade from left side
+            self.turnLeft()
+            self.forward(0.4 + lateral)
+            self.turnRight()
+            self.forward(remaining_x)
+            self.turnRight()
+            self.forward(0.4 + lateral)
+        else:
+            self.turnRight()
+            self.forward(0.4 - lateral)
+            self.turnLeft()
+            self.forward(remaining_x)
+            self.turnLeft()
+            self.forward(0.4 - lateral )
 
         self.get_logger().info(f'arrived at third node 0,1.4')
 
-
-        # wait for obstacle to appear
-        # wait while obstacle becomes stationary
         # find obstacle bounding box 
         # replan
+    def turnLeft(self):
+        print('turn left')
+        dt_linear = 0.9
+        dt_turn = 0.3
+        v_linear = 0.15
+        dt = 1
+        msg = Twist()
+        msg.angular.z = 0.3
+        self.publisher.publish(msg)
+        sleep(radians(90)/0.3+dt_turn)
+
+        msg = Twist()
+        self.publisher.publish(msg)
+        sleep(1)
+
+    def turnRight(self):
+        print('turn right')
+        dt_linear = 0.9
+        dt_turn = 0.3
+        v_linear = 0.15
+        dt = 1
+        msg = Twist()
+        msg.angular.z = -0.3
+        self.publisher.publish(msg)
+        sleep(radians(90)/0.3+dt_turn)
+
+        msg = Twist()
+        self.publisher.publish(msg)
+        sleep(1)
+
+    def forward(self,distance):
+        print(f'forward {distance}')
+        dt_linear = 0.9
+        dt_turn = 0.3
+        v_linear = 0.15
+        dt = 1
+
+        msg = Twist()
+        msg.linear.x = v_linear
+        self.publisher.publish(msg)
+        sleep(distance/v_linear+dt_linear)
+        msg = Twist()
+        self.publisher.publish(msg)
+        sleep(dt)
+
 
     def hough_line(self,scan_x,scan_y, angle_step=1):
         """
@@ -305,7 +370,7 @@ class GotoGoal(Node):
         n = 50
         # [-1,1] -> [0,n]
         rhos = (np.linspace(-1, 1, 2*n) + 1 )*n
-        rhos = rhos.astype(np.int)
+        rhos = rhos.astype(np.int32)
 
         # Cache some reusable values
         cos_t = np.cos(thetas)
@@ -410,14 +475,14 @@ def main(args=None):
     node = GotoGoal()
 
 
-    node.enable_scan.set()
-    rclpy.spin(node)
+    #node.enable_scan.set()
+    #rclpy.spin(node)
 
-    #thread = Thread(target=rclpy.spin, args=(node,),daemon=True)
-    #thread.start()
-    #node.main()
+    thread = Thread(target=rclpy.spin, args=(node,),daemon=True)
+    thread.start()
+    node.main()
 
-    #thread.join()
+    thread.join()
     node.destroy_node()
     rclpy.shutdown()
 
